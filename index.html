@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Retirement planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#F1F3EF; --surface:#FFFFFF; --ink:#14213D; --muted:#5B6678; --line:#D6DCD4;
+  --primary:#0B6E5B; --primary-ink:#FFFFFF; --accent:#D98E04; --bad:#B23A2B; --warn:#8F6200;
+  --fill:rgba(11,110,91,.13);
+  --display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --body:'Figtree','Segoe UI',system-ui,-apple-system,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1512; --surface:#15201B; --ink:#E7EEE9; --muted:#9AA9A0; --line:#27352E;
+    --primary:#4FC3A5; --primary-ink:#06231C; --accent:#F2B93B; --bad:#FF8A78; --warn:#F2B93B;
+    --fill:rgba(79,195,165,.16);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1512; --surface:#15201B; --ink:#E7EEE9; --muted:#9AA9A0; --line:#27352E;
+  --primary:#4FC3A5; --primary-ink:#06231C; --accent:#F2B93B; --bad:#FF8A78; --warn:#F2B93B;
+  --fill:rgba(79,195,165,.16);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--primary);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1200px;margin:0 auto;padding:28px 24px 64px}
+
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;padding-bottom:24px;border-bottom:1px solid var(--line);margin-bottom:32px}
+.top h1{font-family:var(--display);font-weight:700;font-size:1.5rem;margin:0;letter-spacing:-.01em}
+.top p{margin:4px 0 0;color:var(--muted);max-width:56ch}
+.actions{display:flex;gap:8px}
+.btn{background:transparent;border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--primary);color:var(--primary-ink);border-color:var(--primary);font-weight:600}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn[disabled]{opacity:.6;cursor:progress}
+
+.layout{display:grid;grid-template-columns:372px minmax(0,1fr);gap:48px;align-items:start}
+.inputs{position:sticky;top:16px;max-height:calc(100vh - 32px);overflow:auto;padding-right:6px;scrollbar-width:thin}
+fieldset{border:0;margin:0 0 28px;padding:0}
+legend{font-family:var(--display);font-weight:700;font-size:1.05rem;padding:0;margin-bottom:12px}
+.field{margin-bottom:16px}
+.field label,.field .lab{display:block;font-weight:500;font-size:.92rem;margin-bottom:6px}
+.field small{display:block;color:var(--muted);font-size:.82rem;margin-top:4px;min-height:1.2em}
+.hint{font-weight:400;color:var(--muted)}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.row3 .field{margin-bottom:0}
+input[type=text],input[type=number]{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-variant-numeric:tabular-nums}
+input[type=text]:hover,input[type=number]:hover{border-color:var(--muted)}
+.money{display:flex;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.money:hover{border-color:var(--muted)}
+.money:focus-within{outline:3px solid var(--primary);outline-offset:2px}
+.money span{padding-left:12px;color:var(--muted)}
+.money input{border:0;background:transparent;border-radius:0 8px 8px 0}
+.money input:focus-visible{outline:none}
+.slider{display:grid;grid-template-columns:1fr 3.4rem;gap:12px;align-items:center}
+.slider output{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--primary);margin:6px 0}
+.err{color:var(--bad);font-weight:500}
+
+.viewbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:6px 14px;border-radius:999px;cursor:pointer;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--primary);color:var(--primary-ink)}
+.viewbar .note{color:var(--muted);font-size:.88rem}
+
+.chip{display:inline-block;font-weight:600;font-size:.88rem;padding:3px 12px;border-radius:999px;border:1.5px solid currentColor}
+.chip.good{color:var(--primary)} .chip.warn{color:var(--warn)} .chip.bad{color:var(--bad)}
+h2.headline{font-family:var(--display);font-weight:700;font-size:clamp(1.9rem,4.2vw,3.1rem);line-height:1.08;letter-spacing:-.025em;margin:14px 0 10px;max-width:20ch}
+.sub{font-size:1.1rem;color:var(--muted);max-width:60ch;margin:0 0 28px}
+.sub b{color:var(--ink);font-weight:600}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);margin:0 0 36px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.stats div{padding:16px 16px 16px 0}
+.stats div+div{padding-left:16px;border-left:1px solid var(--line)}
+.stats dt{color:var(--muted);font-size:.86rem}
+.stats dd{margin:2px 0 0;font-family:var(--display);font-weight:700;font-size:1.6rem;letter-spacing:-.015em;font-variant-numeric:tabular-nums}
+.stats dd small{display:block;font-family:var(--body);font-weight:400;font-size:.8rem;color:var(--muted);letter-spacing:0}
+
+section.block{margin-bottom:44px}
+section.block>h3{font-family:var(--display);font-weight:700;font-size:1.35rem;letter-spacing:-.01em;margin:0 0 4px}
+section.block>p.lead{color:var(--muted);margin:0 0 16px;max-width:64ch}
+
+.chartwrap{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 8px 8px}
+.chartwrap svg{display:block;width:100%;height:auto;touch-action:pan-y}
+.axis text{fill:var(--muted);font-size:11px;font-family:var(--body)}
+.grid line{stroke:var(--line);stroke-width:1}
+.line-main{fill:none;stroke:var(--primary);stroke-width:2.75;stroke-linejoin:round;stroke-linecap:round}
+.line-need{fill:none;stroke:var(--accent);stroke-width:2.25;stroke-dasharray:6 5}
+.area-main{fill:var(--fill)}
+.retire-line{stroke:var(--muted);stroke-width:1;stroke-dasharray:2 4}
+.lbl{fill:var(--ink);font-size:11.5px;font-weight:600;paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;font-family:var(--body)}
+.mark-need{fill:var(--accent);stroke:var(--surface);stroke-width:2}
+.mark-dep{fill:var(--bad);stroke:var(--surface);stroke-width:2}
+#guide{stroke:var(--ink);stroke-width:1;opacity:0}
+.tip{position:absolute;top:10px;pointer-events:none;background:var(--ink);color:var(--bg);font-size:.82rem;line-height:1.4;padding:7px 10px;border-radius:8px;white-space:nowrap;opacity:0;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:20px;flex-wrap:wrap;margin:12px 4px 0;font-size:.86rem;color:var(--muted)}
+.legend i{display:inline-block;width:22px;height:0;border-top:3px solid var(--primary);vertical-align:middle;margin-right:6px}
+.legend i.d{border-top:3px dashed var(--accent)}
+.legend i.m{width:9px;height:9px;border:0;background:var(--accent);transform:rotate(45deg);margin-right:9px}
+
+.ls{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.ls button{text-align:left;background:transparent;border:1px solid var(--line);border-radius:12px;padding:16px;cursor:pointer;display:block}
+.ls button:hover{border-color:var(--muted)}
+.ls button[aria-checked="true"]{background:var(--surface);border:2px solid var(--primary);padding:15px}
+.ls .nm{font-weight:600}
+.ls .ds{color:var(--muted);font-size:.84rem;display:block}
+.ls .amt{font-family:var(--display);font-weight:700;font-size:1.5rem;display:block;margin:10px 0 8px;letter-spacing:-.015em}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar span{display:block;height:100%;background:var(--primary)}
+.bar.low span{background:var(--bad)} .bar.mid span{background:var(--warn)}
+.ls .pc{font-size:.84rem;margin-top:6px;display:block;font-variant-numeric:tabular-nums}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+.big{font-family:var(--display);font-weight:700;font-size:2.1rem;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1.1}
+.two p{margin:8px 0 0;color:var(--muted)}
+.two p b{color:var(--ink);font-weight:600}
+
+.levers{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.lever{border-top:3px solid var(--primary);padding-top:12px}
+.lever h4{font-family:var(--display);font-size:1.12rem;margin:0 0 6px;line-height:1.25}
+.lever p{margin:0;color:var(--muted);font-size:.94rem}
+
+details{border-top:1px solid var(--line);padding:14px 0}
+details:last-of-type{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;font-weight:600}
+details .in{padding-top:10px;color:var(--muted);max-width:72ch}
+details ul{padding-left:20px;margin:8px 0}
+.tablewrap{overflow-x:auto;max-height:340px;overflow-y:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:.9rem}
+th,td{text-align:right;padding:6px 12px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{position:sticky;top:0;background:var(--bg);color:var(--ink)}
+.fine{color:var(--muted);font-size:.84rem;margin-top:28px;max-width:80ch}
+.empty{padding:40px 0;font-size:1.1rem}
+
+.mbar{display:none}
+@media (max-width:960px){
+  .wrap{padding:20px 16px 96px}
+  .layout{grid-template-columns:1fr;gap:28px}
+  .inputs{position:static;max-height:none;overflow:visible;padding-right:0}
+  .stats{grid-template-columns:1fr 1fr}
+  .stats div:nth-child(3){padding-left:0;border-left:0}
+  .stats div:nth-child(n+3){border-top:1px solid var(--line)}
+  .ls,.levers,.two{grid-template-columns:1fr}
+  .two{gap:24px}
+  .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);text-decoration:none;justify-content:space-between;font-weight:600;z-index:5}
+}
+@media (max-width:480px){
+  .row3{grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .stats dd{font-size:1.35rem}
+}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Retirement planner</h1>
+      <p>Enter where you are today. See what you'll need, what you're on track for, and what would close the gap.</p>
+    </div>
+    <div class="actions">
+      <button class="btn" id="reset" type="button">Reset</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section class="inputs" aria-label="Your details">
+      <fieldset>
+        <legend>About you</legend>
+        <div class="row3">
+          <div class="field"><label for="age">Your age</label><input type="number" id="age" min="18" max="75" inputmode="numeric"></div>
+          <div class="field"><label for="retire">Retire at</label><input type="number" id="retire" min="19" max="80" inputmode="numeric"></div>
+          <div class="field"><label for="life">Plan to age</label><input type="number" id="life" min="60" max="110" inputmode="numeric"></div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Your money</legend>
+        <div class="field">
+          <label for="corpus">Savings and investments for retirement</label>
+          <div class="money"><span>₹</span><input type="text" id="corpus" inputmode="numeric" autocomplete="off"></div>
+          <small id="corpus-w"></small>
+        </div>
+        <div class="field">
+          <label for="expense">Monthly spending today</label>
+          <div class="money"><span>₹</span><input type="text" id="expense" inputmode="numeric" autocomplete="off"></div>
+          <small id="expense-w"></small>
+        </div>
+        <div class="field">
+          <label for="sip">Monthly investment until you retire</label>
+          <div class="money"><span>₹</span><input type="text" id="sip" inputmode="numeric" autocomplete="off"></div>
+          <small id="sip-w"></small>
+        </div>
+        <div class="field">
+          <label for="step">Yearly increase in your monthly investment</label>
+          <div class="slider"><input type="range" id="step" min="0" max="15" step="1"><output id="step-o" for="step"></output></div>
+        </div>
+        <div class="field">
+          <label for="pension">Pension or other income after retiring <span class="hint">(per month, today's money)</span></label>
+          <div class="money"><span>₹</span><input type="text" id="pension" inputmode="numeric" autocomplete="off"></div>
+          <small id="pension-w"></small>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Assumptions</legend>
+        <div class="field">
+          <label for="infl">Inflation per year</label>
+          <div class="slider"><input type="range" id="infl" min="3" max="10" step="0.5"><output id="infl-o" for="infl"></output></div>
+        </div>
+        <div class="field">
+          <label for="pre">Investment growth before retirement</label>
+          <div class="slider"><input type="range" id="pre" min="5" max="15" step="0.5"><output id="pre-o" for="pre"></output></div>
+        </div>
+        <div class="field">
+          <label for="post">Investment growth after retirement</label>
+          <div class="slider"><input type="range" id="post" min="4" max="10" step="0.5"><output id="post-o" for="post"></output></div>
+        </div>
+      </fieldset>
+    </section>
+
+    <section id="results" aria-label="Your results">
+      <div class="viewbar">
+        <div class="seg" role="group" aria-label="Value basis">
+          <button type="button" id="v-future" aria-pressed="true">Future value</button>
+          <button type="button" id="v-real" aria-pressed="false">Today's money</button>
+        </div>
+        <span class="note" id="viewnote">Amounts as they'll appear on the day you retire.</span>
+      </div>
+      <div id="out"></div>
+    </section>
+  </div>
+</div>
+<a class="mbar" id="mbar" href="#results" aria-label="Jump to results"><span id="mbar-a"></span><span id="mbar-b"></span></a>
+
+<script>
+(function(){
+'use strict';
+var DEFAULTS={age:32,retire:55,life:85,corpus:1500000,expense:60000,sip:30000,step:5,pension:0,infl:6,pre:11,post:7,ls:1,real:false};
+var LS=[{n:'Essentials',d:'75% of today\u2019s spending',m:0.75},{n:'Same as today',d:'100% of today\u2019s spending',m:1},{n:'Upgraded',d:'150% of today\u2019s spending',m:1.5}];
+var KEY='retirement-planner-v1';
+var S=Object.assign({},DEFAULTS);
+try{var saved=JSON.parse(localStorage.getItem(KEY)||'null');if(saved&&typeof saved==='object'){Object.keys(DEFAULTS).forEach(function(k){if(typeof saved[k]===typeof DEFAULTS[k]&&(typeof saved[k]!=='number'||isFinite(saved[k])))S[k]=saved[k];});}}catch(e){}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+var inr=new Intl.NumberFormat('en-IN',{maximumFractionDigits:0});
+function money(v){var a=Math.abs(v),s=v<0?'\u2212':'';if(a>=1e7)return s+'\u20B9'+(a/1e7).toFixed(2)+' Cr';if(a>=1e5)return s+'\u20B9'+(a/1e5).toFixed(2)+' L';return s+'\u20B9'+inr.format(Math.round(a));}
+function rupee(v){return '\u20B9'+inr.format(Math.round(v));}
+function up100(v){return Math.ceil(v/100-1e-9)*100;}
+function $(id){return document.getElementById(id);}
+
+/* ---------- model ---------- */
+function rate(x){return Math.pow(1+x/100,1/12)-1;}
+function accumulate(p,sip){
+  var rp=rate(p.pre),n=p.retire-p.age,bal=p.corpus,s=sip,path=[bal];
+  for(var y=0;y<n;y++){for(var m=0;m<12;m++)bal=bal*(1+rp)+s;path.push(bal);s*=1+p.step/100;}
+  return {fv:bal,path:path};
+}
+function required(p){
+  var n=p.retire-p.age,m=p.life-p.retire,rm=rate(p.post),g=1+p.infl/100;
+  var e=p.expense*Math.pow(g,n),pen=p.pension*Math.pow(g,n),req=0,d=1;
+  for(var y=0;y<m;y++){var w=Math.max(0,e-pen);for(var k=0;k<12;k++){req+=w*d;d/=1+rm;}e*=g;pen*=g;}
+  return req;
+}
+function decumulate(p,start){
+  var n=p.retire-p.age,m=p.life-p.retire,rm=rate(p.post),g=1+p.infl/100;
+  var e=p.expense*Math.pow(g,n),pen=p.pension*Math.pow(g,n),bal=start,path=[],dep=null;
+  for(var y=0;y<m;y++){
+    var w=Math.max(0,e-pen);
+    for(var k=0;k<12;k++){
+      if(bal>0){
+        bal-=w;
+        if(bal<-0.5){bal=0;if(dep===null)dep=p.retire+(y*12+k)/12;}
+        else bal=Math.max(bal,0)*(1+rm);
+      }
+    }
+    path.push(bal);e*=g;pen*=g;
+  }
+  return {path:path,dep:dep};
+}
+function supported(p,fv){
+  var hi=Math.max(p.expense,1000)*20,lo=0;
+  var f=function(e){var q=Object.assign({},p);q.expense=e;return required(q);};
+  if(f(hi)<=fv)return {v:hi,capped:true};
+  for(var i=0;i<50;i++){var mid=(lo+hi)/2;if(f(mid)<=fv)lo=mid;else hi=mid;}
+  return {v:lo,capped:false};
+}
+function analyse(mult){
+  var p=Object.assign({},S);p.expense=S.expense*mult;
+  var n=p.retire-p.age,g=1+p.infl/100;
+  var acc=accumulate(p,p.sip),req=required(p),dec=decumulate(p,acc.fv);
+  var f0=accumulate(p,0).fv,f1=accumulate(p,1).fv-f0;
+  var needSip=f1>0?Math.max(0,(req-f0)/f1):0;
+  var r={p:p,n:n,g:g,acc:acc,req:req,dec:dec,fv:acc.fv,funded:req>0?acc.fv/req:2,gap:req-acc.fv,needSip:needSip};
+  return r;
+}
+function fullAnalysis(){
+  var r=analyse(LS[S.ls].m),p=r.p;
+  r.need=null;
+  if(r.gap>0){var a2=accumulate(p,up100(r.needSip));r.need={acc:a2,dec:decumulate(p,a2.fv)};}
+  r.sup=supported(p,r.fv);
+  /* retirement age levers */
+  r.later=null;r.earlier=null;
+  var test=function(ra){var q=Object.assign({},p,{retire:ra});return accumulate(q,q.sip).fv>=required(q);};
+  if(r.gap>0){for(var ra=p.retire+1;ra<=Math.min(80,p.life-1);ra++){if(test(ra)){r.later=ra;break;}}}
+  else{for(var rb=p.age+1;rb<p.retire;rb++){if(test(rb)){r.earlier=rb;break;}}}
+  /* stress test */
+  var q2=Object.assign({},p,{pre:Math.max(p.pre-2,0),post:Math.max(p.post-2,0)});
+  var a3=accumulate(q2,q2.sip);r.stress={dep:decumulate(q2,a3.fv).dep,fv:a3.fv};
+  /* lifestyle cards */
+  r.cards=LS.map(function(l,i){var x=analyse(l.m);return {i:i,req:x.req,funded:x.funded};});
+  /* series for chart */
+  r.series=[];
+  var i;
+  for(i=0;i<=r.n;i++)r.series.push({age:p.age+i,v:r.acc.path[i],w:r.need?r.need.acc.path[i]:null});
+  for(i=0;i<r.dec.path.length;i++)r.series.push({age:p.retire+i+1,v:r.dec.path[i],w:r.need?r.need.dec.path[i]:null});
+  return r;
+}
+
+/* ---------- validation ---------- */
+function validate(){
+  if(!(S.age>=18&&S.age<=75))return 'Enter your age between 18 and 75.';
+  if(!(S.retire>S.age))return 'Retirement age must be later than your current age.';
+  if(S.retire>80)return 'Choose a retirement age of 80 or below.';
+  if(!(S.life>S.retire))return 'The age you plan to may not be earlier than your retirement age.';
+  if(S.life>110)return 'Choose a planning age of 110 or below.';
+  if(!(S.expense>0))return 'Enter your monthly spending to see a result.';
+  return null;
+}
+
+/* ---------- rendering ---------- */
+function niceStep(raw){var pw=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/pw;var m=f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10;return m*pw;}
+function defl(age){return S.real?1/Math.pow(1+S.infl/100,age-S.age):1;}
+
+function chart(r){
+  var W=760,H=340,L=62,R=16,T=26,B=32,p=r.p;
+  var xmin=p.age,xmax=p.life;
+  var reqS=r.req*defl(p.retire);
+  var vals=[reqS];
+  r.series.forEach(function(d){vals.push(d.v*defl(d.age));if(d.w!==null)vals.push(d.w*defl(d.age));});
+  var ymax=Math.max.apply(null,vals)*1.1||1;
+  var step=niceStep(ymax/4);ymax=Math.ceil(ymax/step)*step;
+  var sx=function(a){return L+(a-xmin)/(xmax-xmin)*(W-L-R);};
+  var sy=function(v){return T+(1-v/ymax)*(H-T-B);};
+  var g='<g class="grid">',ax='<g class="axis">',t;
+  for(t=0;t<=ymax+1e-6;t+=step){g+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+sy(t)+'" y2="'+sy(t)+'"/>';ax+='<text x="'+(L-8)+'" y="'+(sy(t)+4)+'" text-anchor="end">'+(t===0?'\u20B90':money(t))+'</text>';}
+  g+='</g>';
+  var xs=Math.max(1,Math.ceil((xmax-xmin)/8/5)*5);
+  var first=Math.ceil(xmin/xs)*xs;
+  for(var a=first;a<=xmax;a+=xs)ax+='<text x="'+sx(a)+'" y="'+(H-10)+'" text-anchor="middle">'+a+'</text>';
+  ax+='</g>';
+  var pts=r.series.map(function(d){return sx(d.age).toFixed(1)+','+sy(d.v*defl(d.age)).toFixed(1);});
+  var line='M'+pts.join(' L');
+  var area=line+' L'+sx(xmax).toFixed(1)+','+sy(0)+' L'+sx(xmin).toFixed(1)+','+sy(0)+' Z';
+  var need='';
+  if(r.need){need='<path class="line-need" d="M'+r.series.map(function(d){return sx(d.age).toFixed(1)+','+sy(d.w*defl(d.age)).toFixed(1);}).join(' L')+'"/>';}
+  var rx=sx(p.retire);
+  var ret='<line class="retire-line" x1="'+rx+'" x2="'+rx+'" y1="'+T+'" y2="'+sy(0)+'"/><text class="lbl" x="'+rx+'" y="'+(T-9)+'" text-anchor="middle">Retire at '+p.retire+'</text>';
+  var tx=rx,ty=sy(reqS);
+  var tm='<path class="mark-need" d="M'+tx+','+(ty-8)+' L'+(tx+8)+','+ty+' L'+tx+','+(ty+8)+' L'+(tx-8)+','+ty+' Z"/>'+
+         '<text class="lbl" x="'+(tx-14)+'" y="'+(ty+4)+'" text-anchor="end">Need '+money(reqS)+'</text>';
+  var dm='';
+  if(r.dec.dep!==null){var dx=sx(r.dec.dep);dm='<circle class="mark-dep" cx="'+dx+'" cy="'+sy(0)+'" r="6"/><text class="lbl" x="'+dx+'" y="'+(sy(0)-14)+'" text-anchor="'+(dx>W*0.7?'end':'middle')+'">Runs out at '+Math.floor(r.dec.dep)+'</text>';}
+  var label='Savings projected to reach '+money(r.fv*defl(p.retire))+' at age '+p.retire+' against a need of '+money(reqS)+'.'+(r.dec.dep!==null?' Money runs out around age '+Math.floor(r.dec.dep)+'.':' Money lasts to age '+p.life+'.');
+  var svg='<svg id="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+label+'">'+g+ax+'<path class="area-main" d="'+area+'"/>'+ret+need+'<path class="line-main" d="'+line+'"/>'+dm+tm+'<line id="guide" x1="0" x2="0" y1="'+T+'" y2="'+sy(0)+'"/></svg>';
+  var legend='<div class="legend"><span><i></i>Your plan</span>'+(r.need?'<span><i class="d"></i>With '+rupee(up100(r.needSip))+' a month</span>':'')+'<span><i class="m"></i>Savings needed at retirement</span></div>';
+  return '<div class="chartwrap" id="cw">'+svg+'<div class="tip" id="tip"></div></div>'+legend;
+}
+
+function render(){
+  var err=validate();
+  var out=$('out');
+  persist();
+  if(err){out.innerHTML='<p class="empty err" role="alert">'+err+'</p>';$('mbar-a').textContent='Check your details';$('mbar-b').textContent='';window.__r=null;return;}
+  var r=fullAnalysis();window.__r=r;
+  var p=r.p,n=r.n,sc=S.real?1/Math.pow(r.g,n):1;
+  var pct=Math.round(r.funded*100);
+  var st=r.funded>=1?['good','On track']:r.funded>=0.75?['warn','Close']:['bad','Behind'];
+  var head,sub;
+  if(r.funded>=1){
+    head='You\u2019re on track. Your money should last past age '+p.life+'.';
+    sub='You\u2019re projected to have <b>'+money(r.fv*sc)+'</b> at '+p.retire+' and need <b>'+money(r.req*sc)+'</b>, a cushion of '+money((r.fv-r.req)*sc)+'.';
+  }else{
+    var yrs=Math.max(1,Math.round(p.life-r.dec.dep));
+    head='Your money runs out around age '+Math.floor(r.dec.dep)+', '+yrs+(yrs===1?' year':' years')+' before '+p.life+'.';
+    sub='You\u2019re projected to have <b>'+money(r.fv*sc)+'</b> at '+p.retire+' against <b>'+money(r.req*sc)+'</b> needed. That\u2019s '+pct+'% funded, with a shortfall of '+money(r.gap*sc)+'.';
+  }
+  var lsHTML='<div class="ls" role="radiogroup" aria-label="Retirement lifestyle">'+r.cards.map(function(c){
+    var w=Math.min(100,c.funded*100),cls=c.funded>=1?'':c.funded>=0.75?'mid':'low';
+    return '<button type="button" role="radio" data-ls="'+c.i+'" aria-checked="'+(c.i===S.ls)+'"><span class="nm">'+LS[c.i].n+'</span><span class="ds">'+LS[c.i].d+'</span><span class="amt">'+money(c.req*sc)+'</span><span class="bar '+cls+'"><span style="width:'+w+'%"></span></span><span class="pc">'+Math.round(c.funded*100)+'% funded</span></button>';
+  }).join('')+'</div>';
+
+  var gn=Math.pow(r.g,n);
+  var supToday=r.sup.v,supAtRet=r.sup.v*gn;
+  var penFut=p.pension*gn;
+  var wr=r.fv>0?Math.max(0,supAtRet-penFut)*12/r.fv*100:0;
+  var capNote=r.sup.capped?'at least ':'about ';
+  var stressTxt=r.stress.dep===null?'Your money still lasts to age '+p.life+'.':'Your money would run out around age '+Math.floor(r.stress.dep)+'.';
+
+  var levers;
+  if(r.gap>0){
+    var ns=up100(r.needSip),extra=ns-S.sip;
+    levers=[
+      ['Invest '+rupee(ns)+' a month','That is '+rupee(extra)+' more than now, rising '+S.step+'% a year as you assumed. This alone closes the gap.'],
+      r.later?['Retire at '+r.later+' instead of '+p.retire,(r.later-p.retire)+' more '+(r.later-p.retire===1?'year':'years')+' of saving and fewer years to fund. This alone closes the gap.']:['Retiring later helps, but not enough','Even retiring at '+Math.min(80,p.life-1)+' leaves a gap with these numbers. Pair it with a higher monthly investment.'],
+      ['Plan on '+rupee(r.sup.v)+' a month','Your projected savings support about that much in today\u2019s money, against '+rupee(p.expense)+' in this lifestyle.']
+    ];
+  }else{
+    var ns2=up100(r.needSip);
+    levers=[
+      ns2<S.sip?['You could invest as little as '+rupee(ns2)+' a month','Against '+rupee(S.sip)+' now. Keep the difference as a buffer for market dips.']:['Keep investing '+rupee(S.sip)+' a month','Your current monthly investment is already close to the minimum this plan needs.'],
+      r.earlier?['You could retire as early as '+r.earlier,(p.retire-r.earlier)+' '+(p.retire-r.earlier===1?'year':'years')+' sooner than planned, if markets match your assumptions.']:['Your retirement age is about right','Retiring any earlier would leave a gap with these numbers.'],
+      ['You could spend '+(r.sup.capped?'well over ':'up to ')+rupee(r.sup.v)+' a month','In today\u2019s money, supported by your projected savings. Today you spend '+rupee(p.expense)+' in this lifestyle.']
+    ];
+  }
+  var leverHTML=levers.map(function(l){return '<div class="lever"><h4>'+l[0]+'</h4><p>'+l[1]+'</p></div>';}).join('');
+  var method=[
+    'Your spending today grows with inflation until you retire, then keeps rising with inflation every year of retirement.',
+    'Savings needed is the amount that, invested at your after-retirement growth rate and drawn down monthly, funds that spending to age '+p.life+' and ends at zero.',
+    'Your projected savings grow monthly at your before-retirement rate. Your monthly investment rises by '+S.step+'% each year.',
+    'Pension or other income is assumed to rise with inflation and reduces what you draw from savings.',
+    'Taxes, fees, one-off expenses and the order in which good and bad years arrive are not included.'
+  ];
+  var methodHTML=method.map(function(m){return '<li>'+m+'</li>';}).join('');
+  r.out={head:head,sub:sub,levers:levers,method:method,supToday:supToday,supAtRet:supAtRet,wr:wr,penFut:penFut,stressTxt:stressTxt,pct:pct,st:st};
+
+  var rows='';
+  r.series.forEach(function(d,i){if(i===0||d.age%1===0){rows+='<tr><td>'+d.age+'</td><td>'+money(d.v*defl(d.age))+'</td>'+(r.need?'<td>'+money(d.w*defl(d.age))+'</td>':'')+'</tr>';}});
+
+  out.innerHTML=
+  '<span class="chip '+st[0]+'">'+st[1]+'</span>'+
+  '<h2 class="headline" aria-live="polite">'+head+'</h2>'+
+  '<p class="sub">'+sub+'</p>'+
+  '<dl class="stats">'+
+    '<div><dt>Years to retirement</dt><dd>'+n+'<small>at age '+p.retire+'</small></dd></div>'+
+    '<div><dt>Savings needed</dt><dd>'+money(r.req*sc)+'<small>'+LS[S.ls].n.toLowerCase()+' lifestyle</small></dd></div>'+
+    '<div><dt>On track for</dt><dd>'+money(r.fv*sc)+'<small>'+pct+'% funded</small></dd></div>'+
+    '<div><dt>'+(r.gap>0?'Shortfall':'Cushion')+'</dt><dd>'+money(Math.abs(r.gap)*sc)+'<small>'+(r.gap>0?'to close':'above what you need')+'</small></dd></div>'+
+  '</dl>'+
+  '<section class="block"><h3>How your savings grow, then fund your retirement</h3><p class="lead">Hover or tap the chart to read the balance at any age.</p>'+chart(r)+'</section>'+
+  '<section class="block"><h3>Choose the retirement you\u2019re planning for</h3><p class="lead">Savings needed to cover each level of spending until age '+p.life+', after inflation.</p>'+lsHTML+'</section>'+
+  '<section class="block"><h3>What your savings can provide</h3><p class="lead">Treat your corpus like a salary paid to you in retirement.</p><div class="two">'+
+    '<div><div class="big">'+rupee(supToday)+' a month</div><p>Supported by your projected savings, in today\u2019s money. That\u2019s <b>'+rupee(supAtRet)+'</b> a month on the day you retire.</p></div>'+
+    '<div><div class="big">'+wr.toFixed(1)+'% a year</div><p>Starting withdrawal rate from your projected corpus'+(penFut>0?', after your other income':'')+'. Lower is safer; many planners use 3 to 4%.</p></div>'+
+  '</div></section>'+
+  '<section class="block"><h3>If markets disappoint</h3><p class="lead">The same plan with growth 2 points lower, both before and after retirement.</p><div class="two"><div><div class="big">'+(r.stress.dep===null?'Still lasts':'Runs out at '+Math.floor(r.stress.dep))+'</div><p>'+stressTxt+' Projected corpus drops to <b>'+money(r.stress.fv*sc)+'</b>.</p></div></div></section>'+
+  '<section class="block"><h3>'+(r.gap>0?'Three ways to close the gap':'Three ways to use your cushion')+'</h3><p class="lead">'+(r.gap>0?'Any one of these gets you there on its own. Mixing them takes less from each.':'Each of these is available to you on its own.')+'</p><div class="levers">'+leverHTML+'</div></section>'+
+  '<section class="block"><details><summary>Year-by-year balances</summary><div class="in"><div class="tablewrap"><table><thead><tr><th>Age</th><th>Your plan</th>'+(r.need?'<th>With '+rupee(up100(r.needSip))+' a month</th>':'')+'</tr></thead><tbody>'+rows+'</tbody></table></div></div></details>'+
+  '<details><summary>How this is calculated</summary><div class="in"><ul>'+
+    methodHTML+
+  '</ul></div></details></section>'+
+  '<p class="fine">This is an illustrative estimate based on the figures and assumptions you entered, not investment advice. Investment returns are not guaranteed and can be negative. Consider speaking with a qualified financial adviser before making decisions.</p>';
+
+  $('mbar-a').textContent=st[1]+' \u00B7 '+pct+'% funded';
+  $('mbar-b').textContent='See results';
+}
+
+/* ---------- inputs ---------- */
+var MONEY=['corpus','expense','sip','pension'],NUMS=['age','retire','life'],SL=['step','infl','pre','post'];
+function fmtMoneyInput(el){
+  var pos=el.selectionStart,before=el.value.slice(0,pos).replace(/\D/g,'').length;
+  var d=el.value.replace(/\D/g,'').slice(0,11).replace(/^0+(?=\d)/,'');
+  var n=d?+d:0;el.value=d?inr.format(n):'';
+  var c=0,i=0;for(;i<el.value.length&&c<before;i++){if(/\d/.test(el.value[i]))c++;}
+  try{el.setSelectionRange(i,i);}catch(e){}
+  return n;
+}
+function hint(k){var v=S[k];$(k+'-w').textContent=v>0?money(v):'';}
+function syncInputs(){
+  MONEY.forEach(function(k){$(k).value=S[k]?inr.format(S[k]):'';hint(k);});
+  NUMS.forEach(function(k){$(k).value=S[k];});
+  SL.forEach(function(k){$(k).value=S[k];$(k+'-o').textContent=(k==='step'?S[k]:Number(S[k]).toFixed(1))+'%';});
+  setView();
+}
+function setView(){
+  $('v-future').setAttribute('aria-pressed',String(!S.real));
+  $('v-real').setAttribute('aria-pressed',String(S.real));
+  $('viewnote').textContent=S.real?'Amounts adjusted back to today\u2019s purchasing power.':'Amounts as they\u2019ll appear on the day you retire.';
+}
+MONEY.forEach(function(k){$(k).addEventListener('input',function(e){S[k]=fmtMoneyInput(e.target);hint(k);render();});});
+NUMS.forEach(function(k){$(k).addEventListener('input',function(e){var v=parseInt(e.target.value,10);S[k]=isNaN(v)?0:v;render();});});
+SL.forEach(function(k){$(k).addEventListener('input',function(e){S[k]=parseFloat(e.target.value);$(k+'-o').textContent=(k==='step'?S[k]:S[k].toFixed(1))+'%';render();});});
+$('v-future').addEventListener('click',function(){S.real=false;setView();render();});
+$('v-real').addEventListener('click',function(){S.real=true;setView();render();});
+$('reset').addEventListener('click',function(){S=Object.assign({},DEFAULTS);syncInputs();render();});
+
+/* delegated events inside results */
+$('out').addEventListener('click',function(e){
+  var b=e.target.closest('[data-ls]');if(!b)return;
+  S.ls=parseInt(b.getAttribute('data-ls'),10);render();
+  var nb=$('out').querySelector('[data-ls="'+S.ls+'"]');if(nb)nb.focus();
+});
+function tipMove(e){
+  var svg=e.target.closest('#chart');if(!svg||!window.__r)return;
+  var r=window.__r,p=r.p,W=760,L=62,R=16;
+  var rect=svg.getBoundingClientRect(),vx=(e.clientX-rect.left)/rect.width*W;
+  var age=p.age+(vx-L)/(W-L-R)*(p.life-p.age);
+  var idx=Math.max(0,Math.min(r.series.length-1,Math.round(age-p.age)));
+  var d=r.series[idx],x=L+(d.age-p.age)/(p.life-p.age)*(W-L-R);
+  var guide=$('guide'),tip=$('tip');
+  guide.setAttribute('x1',x);guide.setAttribute('x2',x);guide.style.opacity=.35;
+  tip.innerHTML='Age '+d.age+': <b>'+money(d.v*defl(d.age))+'</b>'+(d.w!==null?'<br>With '+rupee(up100(r.needSip))+' a month: '+money(d.w*defl(d.age)):'');
+  var pc=x/W*100;
+  tip.style.left=pc+'%';tip.style.transform=pc>65?'translateX(-105%)':'translateX(10px)';
+  tip.style.opacity=1;
+}
+$('out').addEventListener('pointermove',tipMove);
+$('out').addEventListener('pointerdown',tipMove);
+$('out').addEventListener('pointerout',function(e){
+  if(!e.target.closest('#chart'))return;
+  var g=$('guide'),t=$('tip');if(g)g.style.opacity=0;if(t)t.style.opacity=0;
+});
+
+syncInputs();render();
+})();
+</script>
+</body>
+</html>
